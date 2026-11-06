@@ -1,7 +1,7 @@
 /**
  * Centralised HTTP client for the TradeFlow API.
  *
- *  - Base URL from VITE_API_BASE_URL (default "/api/v1", proxied by Vite in development).
+ *  - Base URL from VITE_API_BASE_URL, set by vite.config.ts from API_TARGET (local | prod).
  *  - Access token is kept in memory only (never localStorage); the refresh token is an HttpOnly cookie
  *    the browser sends to /auth/refresh — JavaScript can never read it.
  *  - A 401 triggers one single-flight refresh and a retry; if refresh fails the session-expired handler runs.
