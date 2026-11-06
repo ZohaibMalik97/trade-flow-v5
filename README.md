@@ -1,4 +1,4 @@
-# TradeFlow — B2B Distribution & Sales Portal (web client)
+# TradeFlow — B2B Distribution & Sales Portal (web client)  
 
 > **From Customer Request to Fulfillment.**
 > React 19 + TypeScript single-page application for the TradeFlow portal. All data, authentication and
