@@ -18,10 +18,16 @@ function inlineFavicons(): Plugin {
 export default defineConfig(({ mode }) => {
   const single = mode === 'single'
   const env = loadEnv(mode, process.cwd(), '')
+  // API_TARGET=local|prod picks LOCAL_API_URL or PROD_API_URL (see .env.example).
+  const apiTarget =
+    (env.API_TARGET === 'prod' ? env.PROD_API_URL : env.LOCAL_API_URL) ||
+    env.TRADEFLOW_API_PROXY_TARGET ||
+    'http://localhost:7180'
+  console.log(`[vite] API (${env.API_TARGET || 'local'}) → ${apiTarget}`)
   return {
     // Development: the SPA calls /api/v1 on its own origin and Vite forwards to the ASP.NET Core API, so the
     // HttpOnly refresh cookie is first-party (SameSite=Strict/Lax works) and no CORS is needed.
-    server: { proxy: { '/api': { target: env.TRADEFLOW_API_PROXY_TARGET || 'http://localhost:5180', changeOrigin: false, secure: false } } },
+    server: { proxy: { '/api': { target: apiTarget, changeOrigin: false, secure: false } } },
     plugins: [react(), tailwindcss(), ...(single ? [viteSingleFile(), inlineFavicons()] : [])],
     define: single ? { 'import.meta.env.VITE_SINGLE_FILE': JSON.stringify('true') } : {},
     build: single ? { outDir: 'dist-single', copyPublicDir: false, assetsInlineLimit: 100_000_000 } : {},
