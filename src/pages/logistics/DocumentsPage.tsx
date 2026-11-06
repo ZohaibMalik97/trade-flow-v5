@@ -5,7 +5,7 @@ import { useLookups, useStore } from '@/app/store'
 import { useScope } from '@/hooks/useScope'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Card } from '@/components/ui/Card'
-import { DemoTag, StatusBadge } from '@/components/ui/Badge'
+import { StatusBadge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import { EmptyState } from '@/components/ui/misc'
@@ -71,7 +71,6 @@ export default function DocumentsPage() {
         title="Documents"
         description="Registration, finance and shipping documents linked to customers and orders."
         breadcrumbs={[{ label: 'Fulfillment' }, { label: 'Documents' }]}
-        meta={<DemoTag>Metadata only — no files stored</DemoTag>}
         actions={<Button icon={<Upload className="size-4" />} onClick={() => setUpload(true)}>Upload document</Button>}
       />
       <Card>
@@ -101,9 +100,12 @@ export default function DocumentsPage() {
             <Button variant="secondary" onClick={() => setUpload(false)}>Cancel</Button>
             <Button
               disabled={!files.length || !customerId}
-              onClick={() => {
-                files.forEach((f) => addDocument({ name: f.name, type: newType, sizeKb: f.sizeKb, linkedTo: { kind: 'customer', id: customerId }, customerId, status: 'Pending Review' }))
-                toast.success(`${files.length} document(s) added`, 'Status: Pending review (demo).')
+              onClick={async () => {
+                for (const f of files) {
+                  const res = await addDocument({ name: f.name, type: newType, sizeKb: f.sizeKb, file: f.file, linkedTo: { kind: 'customer', id: customerId }, customerId, status: 'Pending Review' })
+                  if (!res.ok) return toast.error(`${f.name} not uploaded`, res.error)
+                }
+                toast.success(`${files.length} document(s) uploaded`, 'Status: Pending review.')
                 setFiles([])
                 setUpload(false)
               }}

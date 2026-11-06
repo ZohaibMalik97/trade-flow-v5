@@ -62,12 +62,13 @@ export default function PaymentsPage() {
       : []),
   ]
 
-  const decide = (decision: 'verify' | 'reject') => {
+  const decide = async (decision: 'verify' | 'reject') => {
     if (!selected) return
     if (decision === 'verify' && checks.length < CHECKS.length) return setError('Complete every check before verifying.')
     if (decision === 'reject' && note.trim().length < 5) return setError('Explain why the receipt is rejected.')
-    verifyPayment(selected.id, decision, note.trim())
-    toast.success(decision === 'verify' ? 'Payment marked as verified (demo)' : 'Receipt rejected', decision === 'verify' ? 'The order moves to warehouse preparation.' : 'The customer is asked to re-upload.')
+    const res = await verifyPayment(selected.id, decision, note.trim())
+    if (!res.ok) return setError(res.error)
+    toast.success(decision === 'verify' ? 'Payment verified' : 'Receipt rejected', decision === 'verify' ? 'The order moves to warehouse preparation.' : 'The customer is asked to re-upload.')
     close()
   }
 
@@ -121,7 +122,6 @@ export default function PaymentsPage() {
           <div className="space-y-5">
             <div className="flex items-center justify-between">
               <StatusBadge status={selected.status} />
-              <DemoTag>Demo-only verification</DemoTag>
             </div>
             <div className="rounded-lg bg-canvas p-4">
               <p className="text-xs text-muted">Amount due on proforma</p>

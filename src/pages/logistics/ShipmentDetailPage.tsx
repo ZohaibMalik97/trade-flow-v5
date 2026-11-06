@@ -187,7 +187,7 @@ export default function ShipmentDetailPage() {
         footer={
           <>
             <Button variant="secondary" onClick={() => setAdvanceOpen(false)}>Cancel</Button>
-            <Button onClick={() => { advanceShipment(s.id, note.trim()); setAdvanceOpen(false); setNote(''); toast.success(`Status updated: ${next}`, 'Simulated logistics update.') }}>Update status</Button>
+            <Button onClick={async () => { const res = await advanceShipment(s.id, note.trim()); if (!res.ok) return toast.error('Status not updated', res.error); setAdvanceOpen(false); setNote(''); toast.success(`Status updated: ${next}`) }}>Update status</Button>
           </>
         }
       >
@@ -204,11 +204,14 @@ export default function ShipmentDetailPage() {
             <Button variant="secondary" onClick={() => setUploadOpen(false)}>Cancel</Button>
             <Button
               disabled={!files.length}
-              onClick={() => {
-                files.forEach((f) => addDocument({ name: f.name, type: docType, sizeKb: f.sizeKb, linkedTo: { kind: 'shipment', id: s.id }, customerId: s.customerId, status: 'Final' }))
+              onClick={async () => {
+                for (const f of files) {
+                  const res = await addDocument({ name: f.name, type: docType, sizeKb: f.sizeKb, file: f.file, linkedTo: { kind: 'shipment', id: s.id }, customerId: s.customerId, status: 'Final' })
+                  if (!res.ok) return toast.error(`${f.name} not uploaded`, res.error)
+                }
                 setFiles([])
                 setUploadOpen(false)
-                toast.success('Document added', 'Stored as metadata only in the prototype.')
+                toast.success('Document uploaded', 'Stored securely and linked to the shipment.')
               }}
             >
               Add

@@ -4,7 +4,7 @@ import { AlertTriangle, KeyRound, Pencil, Plus, ShieldCheck, UserPlus, Users } f
 import { canFor, useLookups, useStore, type UserInput } from '@/app/store'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Card } from '@/components/ui/Card'
-import { Badge, DemoTag } from '@/components/ui/Badge'
+import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Drawer } from '@/components/ui/Dialog'
 import { Avatar, EmptyState, Notice } from '@/components/ui/misc'
@@ -16,7 +16,7 @@ import { useToast } from '@/components/ui/Toast'
 import { MODULES, PERMISSIONS } from '@/auth/permissions'
 import { permissionsFor } from '@/auth/authorize'
 import { PROTECTED_ROLE_ID } from '@/auth/roles'
-import { regions } from '@/data/org'
+import { regions } from '@/data/reference'
 import { relative } from '@/utils/format'
 import { cn } from '@/utils/cn'
 import type { DemoUser } from '@/types/domain'
@@ -73,7 +73,7 @@ export default function UsersPage() {
     )
   }
 
-  const save = () => {
+  const save = async () => {
     const clean: UserInput = {
       ...draft,
       department: draft.department || undefined,
@@ -85,11 +85,11 @@ export default function UsersPage() {
     if (draft.roleIds.includes('territory_sales_manager') && !clean.territoryIds) return setError('Territory managers need at least one territory assignment.')
     if (draft.roleIds.includes('customer') && !clean.customerId) return setError('Customer users must be linked to a customer account.')
     if (editing === 'new') {
-      const r = createUser(clean, password)
+      const r = await createUser(clean, password)
       if (!r.ok) return setError(r.error)
-      toast.success('User created', `${clean.name} can sign in with the temporary password (prototype).`)
+      toast.success('User created', `${clean.name} can sign in with the temporary password and must change it at first sign-in.`)
     } else if (editing) {
-      const r = updateUser(editing.id, clean)
+      const r = await updateUser(editing.id, clean)
       if (!r.ok) return setError(r.error)
       toast.success('User updated', 'Changes are recorded in the audit trail.')
     }
@@ -134,7 +134,6 @@ export default function UsersPage() {
         title="Users"
         description="Accounts, roles and the assignments that decide which records each user can see."
         breadcrumbs={[{ label: 'Administration' }, { label: 'Users' }]}
-        meta={<DemoTag>No identity provider connected</DemoTag>}
         actions={manage && <Button icon={<UserPlus className="size-4" />} onClick={() => open('new')}>Add user</Button>}
       />
       {!manage && <Notice tone="info" className="mb-4" icon={<ShieldCheck className="size-4" />}>Read-only: your role can view users but not change them.</Notice>}
@@ -238,7 +237,7 @@ export default function UsersPage() {
                   <Toggle label="Active" checked={draft.active} disabled={existing?.id === me.id} onChange={(v) => setDraft({ ...draft, active: v })} />
                 </div>
 
-                {existing && manage && <ResetPassword onReset={(pw) => { const r = resetUserPassword(existing.id, pw); if (!r.ok) setError(r.error); else toast.success('Password reset', 'Share the new temporary password securely (prototype).') }} />}
+                {existing && manage && <ResetPassword onReset={async (pw) => { const r = await resetUserPassword(existing.id, pw); if (!r.ok) setError(r.error); else toast.success('Password reset', 'Share the new temporary password securely (prototype).') }} />}
               </fieldset>
             )}
 

@@ -3,7 +3,7 @@ import { Check, Download, Lock, Minus, ShieldCheck } from 'lucide-react'
 import { useStore } from '@/app/store'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Card } from '@/components/ui/Card'
-import { Badge, DemoTag } from '@/components/ui/Badge'
+import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Notice } from '@/components/ui/misc'
 import { FilterBar, FilterSelect, SearchInput } from '@/components/data-display/FilterBar'
@@ -51,7 +51,6 @@ export default function AuthorizationMatrixPage() {
         title="Authorization matrix"
         description="Which role may do what, by module and action. Each tick is a role → permission grant (role_permissions)."
         breadcrumbs={[{ label: 'Administration' }, { label: 'Authorization Matrix' }]}
-        meta={<DemoTag>Enforced in the browser only</DemoTag>}
         actions={<Button variant="secondary" icon={<Download className="size-4" />} onClick={exportCsv}>Export CSV</Button>}
       />
       {!editable && <Notice tone="info" className="mb-4" icon={<ShieldCheck className="size-4" />}>Read-only view.</Notice>}
@@ -78,7 +77,7 @@ export default function AuthorizationMatrixPage() {
             </thead>
             <tbody>
               {MODULES.filter((m) => perms.some((p) => p.module === m)).map((m) => (
-                <ModuleRows key={m} module={m} perms={perms.filter((p) => p.module === m)} roles={roles} editable={editable} onToggle={(roleId, perm, on) => { const r = setRolePermission(roleId, perm, on); if (!r.ok) toast.error('Not changed', r.error) }} />
+                <ModuleRows key={m} module={m} perms={perms.filter((p) => p.module === m)} roles={roles} editable={editable} onToggle={async (roleId, perm, on) => { const r = await setRolePermission(roleId, perm, on); if (!r.ok) toast.error('Not changed', r.error) }} />
               ))}
               {perms.length === 0 && (
                 <tr><td colSpan={roles.length + 1} className="px-4 py-10 text-center text-muted">No permissions match the filters.</td></tr>

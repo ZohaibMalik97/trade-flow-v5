@@ -4,7 +4,7 @@ import { Download, History, Lock } from 'lucide-react'
 import { useLookups, useStore } from '@/app/store'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Card } from '@/components/ui/Card'
-import { Badge, DemoTag, type Tone } from '@/components/ui/Badge'
+import { Badge, type Tone } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { EmptyState, Notice } from '@/components/ui/misc'
 import { DataTable } from '@/components/data-display/DataTable'
@@ -78,11 +78,10 @@ export default function AuditTrailPage() {
         title="Audit trail"
         description="Who did what and when — customer applications, sales orders, customer and territory changes, sales activities, users, roles, permissions, configuration and sign-ins."
         breadcrumbs={[{ label: 'Administration' }, { label: 'Audit Trail' }]}
-        meta={<DemoTag>Browser storage — not tamper-proof</DemoTag>}
         actions={<Button variant="secondary" icon={<Download className="size-4" />} onClick={exportCsv}>Export CSV</Button>}
       />
       <Notice tone="info" className="mb-4" icon={<Lock className="size-4" />}>
-        Entries are append-only in the prototype UI (there is no edit or delete action). Production needs an immutable, server-side audit store (write-once, hash-chained or WORM storage) with time from a trusted clock.
+        Entries are written server-side in the same transaction as the change and are append-only: the database rejects updates and deletes on the audit table. Times are server UTC.
       </Notice>
       <Card>
         <FilterBar active={!!(q || area || actor)} onReset={() => { setQ(''); setArea(''); setActor('') }}>

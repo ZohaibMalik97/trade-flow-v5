@@ -218,7 +218,7 @@ function ReceiptRecord({ ack }: { ack: GoodsReceiptAck }) {
         {open && can('delivery.resolve_discrepancy') && (
           <div className="space-y-2 border-t border-line pt-3">
             <TextareaField label="Resolution" required rows={2} value={note} error={error} hint={`At least ${MIN_REMARK} characters · shared with the customer`} onChange={(e) => { setNote(e.target.value); setError(undefined) }} />
-            <Button size="sm" variant="secondary" onClick={() => { const r = resolveReceiptDiscrepancy(ack.id, note); if (!r.ok) return setError(r.error); toast.success('Discrepancy resolved', 'The customer has been notified.') }}>Mark resolved</Button>
+            <Button size="sm" variant="secondary" onClick={async () => { const r = await resolveReceiptDiscrepancy(ack.id, note); if (!r.ok) return setError(r.error); toast.success('Discrepancy resolved', 'The customer has been notified.') }}>Mark resolved</Button>
           </div>
         )}
       </CardBody>

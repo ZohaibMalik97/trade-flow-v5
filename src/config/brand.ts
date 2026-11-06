@@ -14,5 +14,5 @@ export const BRAND = {
   tagline: 'From Customer Request to Fulfillment.',
   supportEmail: 'support@tradeflow.example',
   /** Shown wherever the app needs to be explicit that it is a prototype. */
-  demoNotice: 'Frontend prototype — all data is illustrative and every action is simulated locally.',
+  demoNotice: 'Access is restricted to authorised users. Activity is logged.',
 } as const

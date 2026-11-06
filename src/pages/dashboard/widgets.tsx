@@ -162,15 +162,20 @@ export function RequestList({ requests, title, description, to, empty, showSla }
   )
 }
 
-/** Illustrative 12-month history used for trend charts (clearly labelled in the UI). */
-export function illustrativeMonthly(seed: number, base: number) {
-  const months = Array.from({ length: 12 }, (_, i) => {
-    const d = new Date()
-    d.setMonth(d.getMonth() - (11 - i))
-    return d.toLocaleDateString('en-GB', { month: 'short' })
+/** Sums values per calendar month for the last 12 months (oldest first). */
+export function monthlyTotals<T>(items: T[], dateOf: (x: T) => string | undefined, valueOf: (x: T) => number) {
+  const now = new Date()
+  const buckets = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1)
+    return { key: `${d.getFullYear()}-${d.getMonth()}`, label: d.toLocaleDateString('en-GB', { month: 'short' }), value: 0 }
   })
-  return months.map((label, i) => ({
-    label,
-    value: Math.round(base * (0.7 + 0.03 * i + 0.18 * Math.sin((i + seed) * 1.3) + (i === 11 ? 0.12 : 0))),
-  }))
+  const index = new Map(buckets.map((b, i) => [b.key, i]))
+  for (const x of items) {
+    const iso = dateOf(x)
+    if (!iso) continue
+    const d = new Date(iso)
+    const i = index.get(`${d.getFullYear()}-${d.getMonth()}`)
+    if (i !== undefined) buckets[i]!.value += valueOf(x)
+  }
+  return buckets.map(({ label, value }) => ({ label, value: Math.round(value) }))
 }

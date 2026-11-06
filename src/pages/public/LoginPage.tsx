@@ -1,16 +1,14 @@
 import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
-import { AlertCircle, ArrowRight, Eye, EyeOff, FlaskConical, KeyRound, Lock, Mail, RotateCcw, Search } from 'lucide-react'
+import { AlertCircle, ArrowRight, Eye, EyeOff, FlaskConical, KeyRound, Lock, Mail, Search } from 'lucide-react'
 import { canFor, useStore } from '@/app/store'
 import { Logo } from '@/components/layout/Logo'
 import { Avatar } from '@/components/ui/misc'
 import { Button } from '@/components/ui/Button'
-import { ConfirmDialog } from '@/components/ui/Dialog'
 import { TextField } from '@/components/forms/Field'
 import { useToast } from '@/components/ui/Toast'
 import { BRAND } from '@/config/brand'
-import { DEMO_ACCOUNTS } from '@/data/org'
-import { DEMO_PASSWORD } from '@/auth/demoCredentials'
+import { DEMO_ACCOUNTS } from '@/data/reference'
 import { landingPathFor } from '@/config/navigation'
 
 /** Only allow redirects inside the signed-in app (prevents open redirects). */
@@ -18,7 +16,7 @@ const safeNext = (next: string | null) => (next && next.startsWith('/app') && !n
 
 export default function LoginPage() {
   const store = useStore()
-  const { state, login, isAuthenticated, can, resetDemo } = store
+  const { state, login, isAuthenticated, can } = store
   const navigate = useNavigate()
   const toast = useToast()
   const [params] = useSearchParams()
@@ -29,11 +27,10 @@ export default function LoginPage() {
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  const [confirmReset, setConfirmReset] = useState(false)
 
   if (isAuthenticated && !busy) return <Navigate to={next ?? landingPathFor(can)} replace />
 
-  const submit = (e?: FormEvent, override?: { email: string; password: string }) => {
+  const submit = async (e?: FormEvent, override?: { email: string; password: string }) => {
     e?.preventDefault()
     const em = (override?.email ?? email).trim()
     const pw = override?.password ?? password
@@ -45,27 +42,25 @@ export default function LoginPage() {
     setFormError(null)
     if (Object.keys(errs).length) return
     setBusy(true)
-    // Small delay so the loading state is visible (a real IdP call is asynchronous).
-    setTimeout(() => {
-      const r = login(em, pw)
-      if (!r.ok) {
-        setBusy(false)
-        setFormError(r.error)
-        setPassword('')
-        return
-      }
-      toast.success(`Welcome, ${r.user.name.split(' ')[0]}`)
-      navigate(next ?? landingPathFor(canFor(state, r.user)), { replace: true })
+    const r = await login(em, pw)
+    if (!r.ok) {
       setBusy(false)
-    }, 350)
+      setFormError(r.error)
+      setPassword('')
+      return
+    }
+    toast.success(`Welcome, ${r.user.name.split(' ')[0]}`, r.mustChangePassword ? 'Please change your temporary password (user menu › Change password).' : undefined)
+    navigate(next ?? landingPathFor(canFor(store.state, r.user)), { replace: true })
+    setBusy(false)
   }
 
-  const accounts = DEMO_ACCOUNTS.map((a) => ({ ...a, user: state.users.find((u) => u.id === a.userId) })).filter((a) => a.user)
-  const others = state.users.filter((u) => u.active && u.id !== 'u-system' && !DEMO_ACCOUNTS.some((a) => a.userId === u.id))
+  // Demo accounts are listed only when the server runs in demo mode (never in production). The password is not shipped.
+  const accounts = DEMO_ACCOUNTS
   const signInAs = (em: string) => {
     setEmail(em)
-    setPassword(DEMO_PASSWORD)
-    submit(undefined, { email: em, password: DEMO_PASSWORD })
+    setPassword('')
+    setFormError(null)
+    document.getElementById('login-password')?.focus()
   }
 
   return (
@@ -91,7 +86,7 @@ export default function LoginPage() {
 
             <div className="mt-4 flex items-start gap-2 rounded-lg border border-dashed border-primary/40 bg-primary-50/70 px-3 py-2 text-xs text-primary-700">
               <FlaskConical className="mt-px size-4 shrink-0" />
-              <span><strong>Prototype authentication.</strong> Credentials are checked in your browser against mock data. This is not a secure login — production requires a server-side identity provider.</span>
+              <span>Your session is protected by short-lived tokens; repeated failed sign-ins lock the account for a few minutes.</span>
             </div>
 
             <form onSubmit={submit} noValidate className="mt-4 space-y-4" aria-describedby={formError ? 'login-error' : undefined}>
@@ -113,6 +108,7 @@ export default function LoginPage() {
               />
               <TextField
                 label="Password"
+                id="login-password"
                 type={show ? 'text' : 'password'}
                 autoComplete="current-password"
                 required
@@ -129,7 +125,7 @@ export default function LoginPage() {
               <Button type="submit" className="w-full" loading={busy} iconRight={<ArrowRight className="size-4" />}>
                 Sign in
               </Button>
-              <p className="text-xs text-muted">Sessions expire after 8 hours of sign-in time. Forgotten passwords are reset by your administrator in this prototype.</p>
+              <p className="text-xs text-muted"><Link to="/forgot-password" className="font-medium text-primary hover:underline">Forgot your password?</Link></p>
             </form>
 
             <div className="mt-8 space-y-2 text-[13px] text-muted">
@@ -138,30 +134,27 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <section aria-labelledby="demo-accounts" className="card self-start p-5">
+          {state.system?.demoEnabled && accounts.length > 0 && <section aria-labelledby="demo-accounts" className="card self-start p-5">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h2 id="demo-accounts" className="flex items-center gap-2 text-sm font-semibold"><KeyRound className="size-4 text-primary" /> Five demo accounts</h2>
+                <h2 id="demo-accounts" className="flex items-center gap-2 text-sm font-semibold"><KeyRound className="size-4 text-primary" /> Demo accounts</h2>
                 <p className="mt-1 text-xs text-muted">
-                  Prototype only — every seeded account uses the password <code className="rounded bg-canvas px-1 py-0.5 font-mono text-[11px] text-ink">{DEMO_PASSWORD}</code>. Choosing one fills the form and signs in.
+                  This environment runs with demo data. Choosing an account fills in the email — enter the demo password your administrator configured (Demo:Password).
                 </p>
               </div>
-              <button type="button" onClick={() => setConfirmReset(true)} className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-muted hover:bg-canvas hover:text-ink">
-                <RotateCcw className="size-3.5" /> Reset demo data
-              </button>
             </div>
             <ul className="mt-4 space-y-2">
-              {accounts.map(({ userId, label, description, user }) => (
+              {accounts.map(({ userId, label, description, email: accountEmail }) => (
                 <li key={userId}>
                   <button
                     type="button"
                     disabled={busy}
-                    onClick={() => signInAs(user!.email)}
+                    onClick={() => signInAs(accountEmail)}
                     className="group flex w-full items-center gap-3 rounded-lg border border-line bg-surface p-2.5 text-left transition-colors hover:border-primary/50 hover:bg-primary-50/30 disabled:opacity-60"
                   >
-                    <Avatar name={user!.name} size="sm" />
+                    <Avatar name={label} size="sm" />
                     <span className="min-w-0 flex-1">
-                      <span className="block text-[13px] font-semibold">{label} <span className="font-normal text-muted">· {user!.name}</span></span>
+                      <span className="block text-[13px] font-semibold">{label} <span className="font-normal text-muted">· {accountEmail}</span></span>
                       <span className="block truncate text-[11px] text-muted">{description}</span>
                     </span>
                     <ArrowRight className="size-4 shrink-0 text-muted group-hover:text-primary" />
@@ -169,36 +162,10 @@ export default function LoginPage() {
                 </li>
               ))}
             </ul>
-            <details className="mt-4 text-xs">
-              <summary className="cursor-pointer font-medium text-muted hover:text-ink">More test accounts (other territories, prospective customers)</summary>
-              <p className="mt-2 text-muted">These are additional records, not extra roles: other Account Managers show that each manager sees only their own territory, and prospective customers show the application flow. Same password.</p>
-              <ul className="mt-2 grid gap-1 sm:grid-cols-2">
-                {others.map((u) => (
-                  <li key={u.id}>
-                    <button type="button" disabled={busy} onClick={() => signInAs(u.email)} className="w-full truncate rounded px-2 py-1 text-left hover:bg-canvas">
-                      <span className="font-medium text-ink">{u.name}</span> <span className="text-muted">· {u.title.split(',')[0]}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </details>
-          </section>
+          </section>}
         </div>
       </main>
 
-      <ConfirmDialog
-        open={confirmReset}
-        onClose={() => setConfirmReset(false)}
-        onConfirm={() => {
-          resetDemo()
-          setConfirmReset(false)
-          toast.success('Demo data reset', 'All records, users and roles restored to their seeded state.')
-        }}
-        title="Reset demo data?"
-        description="All changes made in this browser (applications, approvals, users, roles, settings) will be discarded."
-        confirmLabel="Reset"
-        tone="danger"
-      />
     </div>
   )
 }

@@ -9,7 +9,7 @@ import { Tabs } from '@/components/ui/Tabs'
 import { Notice } from '@/components/ui/misc'
 import { Checkbox, SelectField, TextField, Toggle } from '@/components/forms/Field'
 import { useToast } from '@/components/ui/Toast'
-import { CATEGORIES } from '@/data/catalog'
+import { CATEGORIES } from '@/data/reference'
 import { defaultApprovalRules, defaultPromoRules } from '@/data/config'
 import { calculatePromo } from '@/utils/promo'
 import { money, num } from '@/utils/format'
@@ -26,7 +26,7 @@ export default function WorkflowRulesPage() {
   const editable = can('workflow.manage')
   return (
     <>
-      <PageHeader title="Workflow rules" description="Customer onboarding stages, sales-order approval bands, tester & sample policy and notification preferences. Changes apply immediately in the prototype." breadcrumbs={[{ label: 'Administration' }, { label: 'Workflow Rules' }]} meta={<DemoTag>Configuration stored locally</DemoTag>} />
+      <PageHeader title="Workflow rules" description="Customer onboarding stages, sales-order approval bands, tester & sample policy and notification preferences. Changes are saved on the server and apply to new work items." breadcrumbs={[{ label: 'Administration' }, { label: 'Workflow Rules' }]} />
       <Tabs className="mb-4" value={tab} onChange={setTab} items={[{ key: 'onboarding', label: 'Customer onboarding' }, { key: 'approval', label: 'Sales-order approvals' }, { key: 'promo', label: 'Tester & sample rules' }, { key: 'notifications', label: 'Notification preferences' }]} />
       {!editable && <Notice tone="info" className="mb-4" icon={<Lock className="size-4" />}>Read-only: your role can view workflow configuration but not change it.</Notice>}
       <fieldset disabled={!editable} className="min-w-0">
@@ -105,8 +105,8 @@ function OnboardingWorkflowEditor() {
           <Button
             icon={<Save className="size-4" />}
             disabled={!dirty}
-            onClick={() => {
-              const r = updateOnboardingWorkflow(def)
+            onClick={async () => {
+              const r = await updateOnboardingWorkflow(def)
               if (!r.ok) return toast.error('Not saved', r.error)
               toast.success('Onboarding workflow saved', 'Applies to the next transition of every application.')
             }}
@@ -171,7 +171,7 @@ function ApprovalRules() {
         </div>
         <div className="flex items-center gap-3">
           {error && <p role="alert" className="text-xs font-medium text-danger-700">{error}</p>}
-          <Button icon={<Save className="size-4" />} disabled={!dirty || !!error} onClick={() => { const r = updateApprovalRules(rules); if (!r.ok) toast.error('Not saved', r.error); else toast.success('Approval rules saved', 'Applies to requests submitted from now on.') }}>Save rules</Button>
+          <Button icon={<Save className="size-4" />} disabled={!dirty || !!error} onClick={async () => { const r = await updateApprovalRules(rules); if (!r.ok) toast.error('Not saved', r.error); else toast.success('Approval rules saved', 'Applies to requests submitted from now on.') }}>Save rules</Button>
         </div>
       </div>
       <div className="border-t border-line bg-canvas/60 px-5 py-4">
@@ -194,7 +194,7 @@ function PromoRulesEditor() {
   const [units, setUnits] = useState(48)
   const dirty = JSON.stringify(r) !== JSON.stringify(state.promoRules)
   const n = (v: string) => Math.max(0, Number(v.replace(/[^\d.]/g, '')) || 0)
-  const sample = calculatePromo([{ productId: 'p-01', quantity: units, unitPrice: 0 }], state.products, r)
+  const sample = calculatePromo([{ productId: state.products[0]?.id ?? '', quantity: units, unitPrice: 0 }], state.products, r)
 
   return (
     <div className="grid gap-4 xl:grid-cols-[1fr_360px]">
@@ -224,7 +224,7 @@ function PromoRulesEditor() {
         </CardBody>
         <div className="flex justify-between gap-2 border-t border-line px-5 py-4">
           <Button variant="ghost" icon={<RotateCcw className="size-4" />} onClick={() => setR(defaultPromoRules)}>Restore defaults</Button>
-          <Button icon={<Save className="size-4" />} disabled={!dirty || r.testerPerUnits < 1 || r.sampleBlockUnits < 1} onClick={() => { updatePromoRules(r); toast.success('Tester & sample rules saved', 'Applied to new and edited requests.') }}>Save rules</Button>
+          <Button icon={<Save className="size-4" />} disabled={!dirty || r.testerPerUnits < 1 || r.sampleBlockUnits < 1} onClick={async () => { const res = await updatePromoRules(r); if (!res.ok) return toast.error('Not saved', res.error); toast.success('Tester & sample rules saved', 'Applied to new and edited requests.') }}>Save rules</Button>
         </div>
       </Card>
       <Card className="h-fit">
@@ -247,7 +247,7 @@ function NotificationPrefs() {
   const lookups = useLookups()
   return (
     <Card>
-      <CardHeader title="Notification preferences" description="Default channels per event. Email delivery is not implemented in the prototype." icon={<Bell className="size-5" />} />
+      <CardHeader title="Notification preferences" description="Default channels per event. Email is delivered by the server's background sender when email is enabled." icon={<Bell className="size-5" />} />
       <div className="overflow-x-auto">
         <table className="w-full text-[13px]">
           <thead>

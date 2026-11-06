@@ -48,7 +48,7 @@ export const defaultRoles: Role[] = [
       ...WORKSPACE,
       'application.view_all', 'application.view_internal',
       'customer.view_all', 'customer.manage', 'customer.reassign',
-      'catalog.view', 'order.view_all', 'order.approval_monitor', 'delivery.view',
+      'catalog.view', 'catalog.manage', 'order.view_all', 'order.approval_monitor', 'delivery.view',
       'invoice.view', 'payment.view', 'shipment.view', 'collection.view', 'document.view',
       'email.view', 'activity.view_all', 'performance.view_all',
       'user.view', 'user.manage', 'role.view', 'role.manage', 'permission.manage',

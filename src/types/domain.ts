@@ -171,6 +171,8 @@ export interface Contact {
 }
 
 export interface Customer {
+  /** Server concurrency token (SQL rowversion) — sent back with updates. */
+  version?: string
   id: ID
   code: string
   name: string
@@ -329,6 +331,8 @@ export interface ApplicationRevision {
 }
 
 export interface RegistrationApplication extends ApplicationContent {
+  /** Server concurrency token (SQL rowversion) — sent back with updates. */
+  version?: string
   id: ID
   ref: string
   workflowId: string
@@ -469,6 +473,8 @@ export interface GoodsReceiptAck {
 }
 
 export interface SalesOrderRequest {
+  /** Server concurrency token (SQL rowversion) — sent back with updates. */
+  version?: string
   id: ID
   ref: string
   customerId: ID
@@ -664,7 +670,7 @@ export interface EmailMessage {
   to: EmailParticipant[]
   sentAt: ISODate
   body: string
-  attachments: { name: string; sizeKb: number }[]
+  attachments: { name: string; sizeKb: number; documentId?: string }[]
   direction: 'inbound' | 'outbound'
   /** True for messages composed inside the prototype (never actually sent). */
   simulated?: boolean

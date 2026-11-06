@@ -120,7 +120,7 @@ export default function CollectionPage() {
       <ConfirmDialog
         open={!!confirmId}
         onClose={() => setConfirmId(null)}
-        onConfirm={() => { advanceShipment(confirmId!, 'Collected by forwarder (confirmed at gate)'); setConfirmId(null); toast.success('Marked as collected (demo)') }}
+        onConfirm={async () => { const res = await advanceShipment(confirmId!, 'Collected by forwarder (confirmed at gate)'); setConfirmId(null); if (!res.ok) return toast.error('Not updated', res.error); toast.success('Marked as collected') }}
         title="Confirm goods collected?"
         description="The order is closed and the customer is notified in-app."
         confirmLabel="Confirm collected"

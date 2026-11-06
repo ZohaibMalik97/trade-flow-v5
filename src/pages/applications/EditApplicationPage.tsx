@@ -66,16 +66,16 @@ export default function EditApplicationPage() {
         editableSections={correction ? app.returnInfo?.editableSections : undefined}
         submitLabel={correction ? 'Resubmit application' : 'Submit application'}
         reviewExtra={correction ? <TextareaField label="Message to the reviewer (optional)" rows={3} value={note} onChange={(e) => setNote(e.target.value)} hint="Shown to the reviewer and on your own timeline." /> : undefined}
-        onSaveDraft={(o) => {
-          const r = save(o)
+        onSaveDraft={async (o) => {
+          const r = await save(o)
           if (!r.ok) return setError(r.error)
           setError(null)
           toast.success(correction ? 'Changes saved' : 'Draft saved', 'Not yet sent to the reviewer.')
         }}
-        onSubmit={(o) => {
-          const saved = save(o)
+        onSubmit={async (o) => {
+          const saved = await save(o)
           if (!saved.ok) return setError(saved.error)
-          const r = correction ? resubmitOwnApplication(app.id, note) : submitOwnApplication(app.id)
+          const r = correction ? await resubmitOwnApplication(app.id, note) : await submitOwnApplication(app.id)
           if (!r.ok) return setError(r.error)
           toast.success(correction ? 'Application resubmitted' : 'Application submitted', app.ref)
           navigate(`/app/my-applications/${app.id}`)

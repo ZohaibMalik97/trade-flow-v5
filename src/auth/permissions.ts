@@ -70,6 +70,7 @@ export const PERMISSIONS: PermissionDef[] = [
 
   // Catalog
   p('catalog.view', 'Product catalog', 'View', 'View catalog', 'Browse products, prices and availability.'),
+  p('catalog.manage', 'Product catalog', 'Manage', 'Manage catalogue', 'Maintain products, brands, product images, price lists and exchange rates.'),
 
   // Sales orders
   p('order.view_own', 'Sales orders', 'View', 'View own orders', 'See requests and orders of the user’s customer account.'),

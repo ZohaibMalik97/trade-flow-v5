@@ -1,6 +1,6 @@
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
-import { defineConfig, type Plugin } from 'vite'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
 import { viteSingleFile } from 'vite-plugin-singlefile'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath, URL } from 'node:url'
@@ -17,7 +17,11 @@ function inlineFavicons(): Plugin {
 
 export default defineConfig(({ mode }) => {
   const single = mode === 'single'
+  const env = loadEnv(mode, process.cwd(), '')
   return {
+    // Development: the SPA calls /api/v1 on its own origin and Vite forwards to the ASP.NET Core API, so the
+    // HttpOnly refresh cookie is first-party (SameSite=Strict/Lax works) and no CORS is needed.
+    server: { proxy: { '/api': { target: env.TRADEFLOW_API_PROXY_TARGET || 'http://localhost:5180', changeOrigin: false, secure: false } } },
     plugins: [react(), tailwindcss(), ...(single ? [viteSingleFile(), inlineFavicons()] : [])],
     define: single ? { 'import.meta.env.VITE_SINGLE_FILE': JSON.stringify('true') } : {},
     build: single ? { outDir: 'dist-single', copyPublicDir: false, assetsInlineLimit: 100_000_000 } : {},

@@ -34,8 +34,17 @@ import type {
   SapPaymentView,
   SapSalesOrder,
 } from '@/types/sap'
-import type { ListQuery, SapAccessContext } from './sapDevMock'
-export type { ListQuery, SapAccessContext }
+/** The customers the current principal may see. The server enforces this independently. */
+export interface SapAccessContext {
+  customerIds: string[]
+}
+
+export interface ListQuery {
+  customerId?: string
+  search?: string
+  page?: number
+  pageSize?: number
+}
 
 export interface SubmissionReceipt {
   id: string
@@ -49,8 +58,11 @@ export interface PriceAvailability {
   unitPrice: number
   availableQty: number
   stockStatus: StockStatus
-  /** Source marker so the UI can label values honestly. */
-  source: 'mock'
+  /** Source marker so the UI can label values honestly ('mock' = development stand-in, 'live' = read from SAP). */
+  source: 'mock' | 'live'
+  /** Where the price came from: customer price list, general price list or list price × FX. */
+  priceSource?: 'customer_price_list' | 'price_list' | 'list_price_fx'
+  asOf?: string
 }
 
 export interface ProductQuery {

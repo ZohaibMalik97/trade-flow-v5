@@ -59,6 +59,8 @@ export const router = createRouter([
   { path: '/sign-in', element: <Navigate to="/login" replace /> },
   { path: '/register', element: open(page(() => import('@/pages/public/RegisterPage'))) },
   { path: '/track', element: open(page(() => import('@/pages/public/TrackApplicationPage'))) },
+  { path: '/forgot-password', element: open(page(() => import('@/pages/public/PasswordResetPages').then((m) => ({ default: m.ForgotPasswordPage })))) },
+  { path: '/reset-password', element: open(page(() => import('@/pages/public/PasswordResetPages').then((m) => ({ default: m.ResetPasswordPage })))) },
   { path: '/status/:ref', element: <LegacyStatusRedirect /> },
   {
     path: '/app',
@@ -127,6 +129,7 @@ export const router = createRouter([
       { path: 'admin/integration', element: gated('integration', page(() => import('@/pages/administration/IntegrationMonitorPage'))) },
       { path: 'admin/audit', element: gated('audit', page(() => import('@/pages/administration/AuditTrailPage'))) },
 
+      { path: 'change-password', element: open(page(() => import('@/pages/public/PasswordResetPages').then((m) => ({ default: m.ChangePasswordPage })))) },
       { path: 'no-access', element: <AccessDenied title="No modules are assigned to your account" description="Your account is signed in but has no permissions yet. Ask your System Administrator to assign a role." /> },
       { path: '*', element: open(page(() => import('@/pages/NotFoundPage'))) },
     ],

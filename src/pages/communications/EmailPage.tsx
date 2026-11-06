@@ -4,7 +4,7 @@ import { ArrowLeft, CalendarClock, FlaskConical, Inbox, Link2, Mail, MailOpen, P
 import { useLookups, useStore } from '@/app/store'
 import { useScope } from '@/hooks/useScope'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { Badge, DemoTag, StatusBadge } from '@/components/ui/Badge'
+import { Badge, StatusBadge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import { Avatar, EmptyState } from '@/components/ui/misc'
@@ -13,6 +13,7 @@ import { FileDrop, type LocalFile } from '@/components/forms/FileDrop'
 import { SearchInput } from '@/components/data-display/FilterBar'
 import { Popover, MenuItem, MenuDivider } from '@/components/ui/Menu'
 import { useToast } from '@/components/ui/Toast'
+import { downloadFile } from '@/services/api/client'
 import { cn } from '@/utils/cn'
 import { dateTime, fileSize, relative } from '@/utils/format'
 import type { EmailThread, FollowUpStatus } from '@/types/domain'
@@ -58,21 +59,23 @@ export default function EmailPage() {
     setShowReplyFiles(false)
   }
 
-  const sendReply = () => {
+  const sendReply = async () => {
     if (!active || !reply.trim()) return
     const last = active.messages.at(-1)!
     const to = last.from.email === user.email ? last.to : [last.from]
-    sendEmail({ threadId: active.id, subject: active.subject, to, body: reply.trim(), attachments: replyFiles, customerId: active.customerId, requestId: active.requestId })
+    const r = await sendEmail({ threadId: active.id, subject: active.subject, to, body: reply.trim(), attachments: replyFiles, customerId: active.customerId, requestId: active.requestId })
+    if (!r.ok) return toast.error('Reply not sent', r.error)
     setReply('')
     setReplyFiles([])
     setShowReplyFiles(false)
-    toast.success('Reply added to the thread', 'Demo only — no email was sent.')
+    toast.success('Reply sent', 'Recorded on the conversation and queued for e-mail delivery.')
   }
 
-  const setFU = (status: FollowUpStatus, days?: number) => {
+  const setFU = async (status: FollowUpStatus, days?: number) => {
     if (!active) return
     const due = days !== undefined ? new Date(Date.now() + days * 864e5).toISOString() : active.followUp.dueAt
-    setFollowUp(active.id, status, status === 'None' ? undefined : due, active.followUp.note)
+    const r = await setFollowUp(active.id, status, status === 'None' ? undefined : due, active.followUp.note)
+    if (!r.ok) return toast.error('Follow-up not changed', r.error)
     toast.success(status === 'Done' ? 'Follow-up completed' : status === 'None' ? 'Follow-up cleared' : 'Follow-up scheduled')
   }
 
@@ -82,7 +85,6 @@ export default function EmailPage() {
         title="Email conversations"
         description="Customer correspondence linked to accounts and orders."
         breadcrumbs={[{ label: 'Communication' }, { label: 'Email Conversations' }]}
-        meta={<DemoTag>Sending is simulated</DemoTag>}
         actions={<Button icon={<PenSquare className="size-4" />} onClick={() => setParams({ compose: scope.customers[0]?.id ?? '' })}>Compose</Button>}
       />
 
@@ -194,7 +196,7 @@ export default function EmailPage() {
                           {m.attachments.length > 0 && (
                             <div className="mt-3 flex flex-wrap gap-2">
                               {m.attachments.map((a) => (
-                                <button key={a.name} type="button" onClick={() => toast.info('Attachment preview unavailable', 'Attachments are metadata only in the prototype.')} className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-2.5 py-1.5 text-xs hover:border-primary/40">
+                                <button key={a.name} type="button" onClick={() => (a.documentId ? downloadFile(`/documents/${encodeURIComponent(a.documentId)}/content`, a.name).catch((e) => toast.error('File not available', e instanceof Error ? e.message : '')) : toast.info('No stored file', 'This attachment was recorded without file content.'))} className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-2.5 py-1.5 text-xs hover:border-primary/40">
                                   <Paperclip className="size-3.5 text-muted" />{a.name} <span className="text-muted">{fileSize(a.sizeKb)}</span>
                                 </button>
                               ))}
@@ -212,7 +214,7 @@ export default function EmailPage() {
                 {showReplyFiles && <div className="mt-3"><FileDrop files={replyFiles} onChange={setReplyFiles} /></div>}
                 <div className="mt-3 flex items-center justify-between gap-2">
                   <Button size="sm" variant="ghost" icon={<Paperclip className="size-4" />} onClick={() => setShowReplyFiles(!showReplyFiles)}>{replyFiles.length ? `${replyFiles.length} attached` : 'Attach'}</Button>
-                  <Button size="sm" icon={<Reply className="size-4" />} disabled={!reply.trim()} onClick={sendReply}>Send reply (demo)</Button>
+                  <Button size="sm" icon={<Reply className="size-4" />} disabled={!reply.trim()} onClick={sendReply}>Send reply</Button>
                 </div>
               </div>
             </>
@@ -237,7 +239,7 @@ export default function EmailPage() {
         footer={
           <>
             <Button variant="secondary" onClick={() => setLinkOpen(false)}>Cancel</Button>
-            <Button onClick={() => { linkThread(active!.id, linkCustomer, linkRequest || undefined); setLinkOpen(false); toast.success('Conversation linked') }}>Save link</Button>
+            <Button onClick={async () => { const r = await linkThread(active!.id, linkCustomer, linkRequest || undefined); if (!r.ok) return toast.error('Not linked', r.error); setLinkOpen(false); toast.success('Conversation linked') }}>Save link</Button>
           </>
         }
       >
@@ -277,7 +279,7 @@ function ComposeDialog({ open, defaultCustomerId, defaultRequestId, onClose, onS
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
-  const send = () => {
+  const send = async () => {
     const e: Record<string, string> = {}
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to.trim())) e.to = 'Enter a valid recipient email'
     if (subject.trim().length < 3) e.subject = 'Add a subject'
@@ -286,9 +288,10 @@ function ComposeDialog({ open, defaultCustomerId, defaultRequestId, onClose, onS
     setErrors(e)
     if (Object.keys(e).length) return
     const contact = lookups.customer(customerId)?.contacts.find((c) => c.email === to.trim())
-    const id = sendEmail({ subject: subject.trim(), to: [{ name: contact?.name ?? to.trim(), email: to.trim() }], body: body.trim(), attachments: files, customerId, requestId: requestId || undefined })
-    toast.success('Message added to demo inbox', 'No real email was sent.')
-    onSent(id)
+    const r = await sendEmail({ subject: subject.trim(), to: [{ name: contact?.name ?? to.trim(), email: to.trim() }], body: body.trim(), attachments: files, customerId, requestId: requestId || undefined })
+    if (!r.ok) return toast.error('Not sent', r.error)
+    toast.success('Message sent', 'Queued for e-mail delivery and recorded on the conversation.')
+    onSent(r.threadId)
   }
 
   return (
@@ -299,9 +302,9 @@ function ComposeDialog({ open, defaultCustomerId, defaultRequestId, onClose, onS
       size="lg"
       footer={
         <>
-          <span className="mr-auto inline-flex items-center gap-1.5 text-xs text-muted"><FlaskConical className="size-3.5" />Simulated — stays in this browser</span>
+          <span className="mr-auto inline-flex items-center gap-1.5 text-xs text-muted"><FlaskConical className="size-3.5" />Sent by the server's email queue</span>
           <Button variant="secondary" onClick={onClose}>Discard</Button>
-          <Button icon={<Send className="size-4" />} onClick={send}>Send (demo)</Button>
+          <Button icon={<Send className="size-4" />} onClick={send}>Send</Button>
         </>
       }
     >

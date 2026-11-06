@@ -14,9 +14,9 @@ import { zodResolver } from '@/components/forms/zodResolver'
 import { Notice } from '@/components/ui/misc'
 import { Badge } from '@/components/ui/Badge'
 import { useStore, type NewFile } from '@/app/store'
-import { brands } from '@/data/catalog'
-import { COUNTRIES } from '@/data/org'
-import { passwordProblems } from '@/auth/demoCredentials'
+import { brands } from '@/data/reference'
+import { COUNTRIES } from '@/data/reference'
+import { passwordProblems } from '@/auth/passwordPolicy'
 import { SECTION_LABELS } from '@/workflow/onboarding'
 import { cn } from '@/utils/cn'
 import { date, fileSize } from '@/utils/format'
@@ -178,7 +178,7 @@ export function CustomerApplicationForm({
         billingAddress: billing,
         deliveryAddress: v.sameAsBilling ? { ...billing } : { line1: v.deliveryLine1 ?? '', city: v.deliveryCity ?? '', country: v.country },
       },
-      addDocuments: newDocs.map((d) => ({ name: d.name, type: d.type, sizeKb: d.sizeKb })),
+      addDocuments: newDocs.map((d) => ({ name: d.name, type: d.type, sizeKb: d.sizeKb, file: d.file })),
       supersedeDocumentIds: supersede,
     }
   }

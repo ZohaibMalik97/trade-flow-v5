@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom'
 import { ChevronsLeft, ChevronsRight, FlaskConical } from 'lucide-react'
 import { navigationFor, type NavItem } from '@/config/navigation'
 import { useStore } from '@/app/store'
+import { SAP_MODE } from '@/services'
 import { useScope, useTasks } from '@/hooks/useScope'
 import { cn } from '@/utils/cn'
 import { Logo } from './Logo'
@@ -97,7 +98,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
         {!collapsed && (
           <div className="mb-2 flex items-start gap-2 rounded-lg bg-white/5 px-3 py-2.5 text-[11px] leading-snug text-slate-400">
             <FlaskConical className="mt-px size-3.5 shrink-0 text-primary-100" />
-            <span>Prototype — data stored in this browser. SAP: development mock, not connected.</span>
+            <span>{SAP_MODE === 'mock' ? 'SAP: development mock (server-side) — not connected to SAP.' : 'SAP: live integration.'}</span>
           </div>
         )}
         <button

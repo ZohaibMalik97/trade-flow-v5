@@ -21,8 +21,8 @@ export default function RegisterPage() {
     if (!out.account) return
     setBusy(true)
     setError(null)
-    setTimeout(() => {
-      const r = registerApplicant({ account: out.account!, content: out.content, documents: out.addDocuments, submit })
+    setTimeout(async () => {
+      const r = await registerApplicant({ account: out.account!, content: out.content, documents: out.addDocuments, submit })
       setBusy(false)
       if (!r.ok) {
         setError(r.error)
@@ -70,7 +70,7 @@ export default function RegisterPage() {
             </div>
           )}
           <Notice tone="demo" className="mt-5 text-left" icon={<FlaskConical className="size-4" />}>
-            Prototype — your account and application are stored only in this browser. No email is sent and no customer is created in any ERP.
+            Your account and application are saved. We email you a secure tracking link; a customer account is created only after approval.
           </Notice>
           <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
             <ButtonLink to={done.submitted ? `/app/my-applications/${done.appId}` : `/app/my-applications/${done.appId}/edit`} icon={<LogIn className="size-4" />}>

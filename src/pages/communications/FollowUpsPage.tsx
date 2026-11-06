@@ -38,7 +38,7 @@ export default function FollowUpsPage() {
         <span className="text-xs text-muted" title={date(t.followUp.dueAt)}>{t.followUp.dueAt ? `Due ${relative(t.followUp.dueAt)}` : ''}</span>
         <StatusBadge status={t.followUp.status} />
         {t.followUp.status !== 'Done' && (
-          <Button size="xs" variant="secondary" icon={<Check className="size-3.5" />} onClick={() => { setFollowUp(t.id, 'Done', t.followUp.dueAt, t.followUp.note); toast.success('Follow-up completed') }}>Done</Button>
+          <Button size="xs" variant="secondary" icon={<Check className="size-3.5" />} onClick={async () => { const r = await setFollowUp(t.id, 'Done', t.followUp.dueAt, t.followUp.note); if (!r.ok) return toast.error('Not updated', r.error); toast.success('Follow-up completed') }}>Done</Button>
         )}
       </div>
     </li>

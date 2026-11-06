@@ -16,7 +16,7 @@ import { Dialog } from '@/components/ui/Dialog'
 import { SelectField, TextareaField } from '@/components/forms/Field'
 import { ActivityList, LogActivityButton } from '@/components/customers/Activities'
 import { useToast } from '@/components/ui/Toast'
-import { brands } from '@/data/catalog'
+import { brands } from '@/data/reference'
 import { date, fileSize, money, relative } from '@/utils/format'
 import type { CustomerStatus, DocumentRecord, SalesOrderRequest } from '@/types/domain'
 
@@ -328,9 +328,10 @@ export default function CustomerDetailPage() {
             <Button
               variant={statusDialog === 'Blocked' ? 'danger' : 'primary'}
               disabled={statusDialog !== 'Active' && reason.trim().length < 5}
-              onClick={() => {
-                setCustomerStatus(customer.id, statusDialog!, reason)
-                toast.success(`Account status: ${statusDialog}`, 'Updated in the prototype only.')
+              onClick={async () => {
+                const res = await setCustomerStatus(customer.id, statusDialog!, reason)
+                if (!res.ok) return toast.error('Status not changed', res.error)
+                toast.success(`Account status: ${statusDialog}`, 'Recorded in the audit trail.')
                 setStatusDialog(null)
                 setReason('')
               }}
@@ -340,7 +341,7 @@ export default function CustomerDetailPage() {
           </>
         }
       >
-        <TextareaField label="Reason" required={statusDialog !== 'Active'} hint="Kept with the account history (demo)." value={reason} onChange={(e) => setReason(e.target.value)} rows={3} />
+        <TextareaField label="Reason" required={statusDialog !== 'Active'} hint="Kept with the account history." value={reason} onChange={(e) => setReason(e.target.value)} rows={3} />
       </Dialog>
       <Dialog
         open={moveOpen}
@@ -352,9 +353,9 @@ export default function CustomerDetailPage() {
           <>
             <Button variant="secondary" onClick={() => setMoveOpen(false)}>Cancel</Button>
             <Button
-              onClick={() => {
+              onClick={async () => {
                 if (!moveTo) return setMoveError('Select the new territory.')
-                const r = reassignCustomerTerritory(customer.id, moveTo, moveReason)
+                const r = await reassignCustomerTerritory(customer.id, moveTo, moveReason)
                 if (!r.ok) return setMoveError(r.error)
                 toast.success('Territory updated', `${customer.name} now belongs to ${lookups.territory(moveTo)?.name}.`)
                 setMoveOpen(false)
@@ -394,7 +395,7 @@ function SapMappingField({ customerId, bp }: { customerId: string; bp?: string }
     <span className="flex flex-col gap-1">
       <span className="flex items-center gap-1.5">
         <input aria-label="SAP business partner number" className="input h-8 w-36 font-mono" value={value} onChange={(e) => { setValue(e.target.value); setError(undefined) }} />
-        <Button size="sm" onClick={() => { const r = setSapMapping(customerId, value); if (!r.ok) return setError(r.error); setEdit(false); toast.success('SAP mapping saved', 'Recorded in the audit trail.') }}>Save</Button>
+        <Button size="sm" onClick={async () => { const r = await setSapMapping(customerId, value); if (!r.ok) return setError(r.error); setEdit(false); toast.success('SAP mapping saved', 'Recorded in the audit trail.') }}>Save</Button>
         <Button size="sm" variant="ghost" onClick={() => { setEdit(false); setError(undefined) }}>Cancel</Button>
       </span>
       {error && <span role="alert" className="text-xs text-danger-700">{error}</span>}

@@ -69,8 +69,8 @@ export function ActivityList({ activities, showCustomer }: { activities: Custome
           <>
             <Button variant="secondary" onClick={() => setCompleting(null)}>Cancel</Button>
             <Button
-              onClick={() => {
-                const r = updateActivity(completing!.id, { status: 'Completed', outcome: outcome.trim() || undefined })
+              onClick={async () => {
+                const r = await updateActivity(completing!.id, { status: 'Completed', outcome: outcome.trim() || undefined })
                 if (!r.ok) return toast.error('Not saved', r.error)
                 toast.success('Activity completed')
                 setCompleting(null)
@@ -109,9 +109,9 @@ export function LogActivityButton({ customerId, size = 'md' }: { customerId?: st
           <>
             <Button variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>
             <Button
-              onClick={() => {
+              onClick={async () => {
                 if (!f.customerId) return setError('Select a customer.')
-                const r = logActivity({
+                const r = await logActivity({
                   customerId: f.customerId,
                   type: f.type,
                   subject: f.subject,

@@ -13,7 +13,7 @@
  */
 import type { RegistrationApplication, WorkflowDef } from '@/types/domain'
 import type { ApplicationTrackingService, TrackingResult } from '@/services/contracts'
-import { toPublicView } from './publicView'
+import { toPublicView } from '@/workflow/publicView'
 
 export const GENERIC_TRACK_ERROR = 'We could not find an application matching those details. Check the reference number and the email address used to register.'
 const MAX_FAILURES = 5

@@ -15,7 +15,7 @@ import { EmptyState, KeyValue, Notice } from '@/components/ui/misc'
 import { TextField } from '@/components/forms/Field'
 import { DataTable } from '@/components/data-display/DataTable'
 import { useToast } from '@/components/ui/Toast'
-import { brands } from '@/data/catalog'
+import { brands } from '@/data/reference'
 import { date, money, relative } from '@/utils/format'
 import { uid } from '@/utils/time'
 import type { Address, Contact, SalesOrderRequest } from '@/types/domain'
@@ -162,8 +162,8 @@ function ProfileTab() {
             <Button
               icon={<Save className="size-4" />}
               disabled={!dirty}
-              onClick={() => {
-                const r = updateOwnProfile({ contacts, deliveryAddress: delivery })
+              onClick={async () => {
+                const r = await updateOwnProfile({ contacts, deliveryAddress: delivery })
                 if (!r.ok) return setError(r.error)
                 setError(null)
                 toast.success('Profile updated', 'Your account manager has been notified.')

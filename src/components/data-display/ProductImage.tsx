@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Product } from '@/types/domain'
-import { brands } from '@/data/catalog'
+import { brands } from '@/data/reference'
 import { cn } from '@/utils/cn'
 import { ProductVisual } from './ProductVisual'
 

@@ -78,18 +78,20 @@ export default function IntegrationMonitorPage() {
         title="Integration monitor"
         description="How ERP synchronisation would be supervised once a backend exists."
         breadcrumbs={[{ label: 'Administration' }, { label: 'Integration Monitor' }]}
-        meta={<DemoTag>Simulated — not connected to SAP</DemoTag>}
+        meta={SAP_MODE === 'mock' ? <DemoTag>SAP development mock</DemoTag> : undefined}
         actions={<Button variant="secondary" icon={<RefreshCw className="size-4" />} disabled={!failed.filter((e) => e.entity !== 'Sales Order').length || retrying.size > 0} onClick={() => failed.forEach((e) => void retry(e))}>Retry failed syncs ({failed.filter((e) => e.entity !== 'Sales Order').length})</Button>}
       />
 
       {SAP_MODE === 'mock' && can('integration.retry') && <div className="mb-4"><SapSimulator /></div>}
 
-      <Notice tone="demo" icon={<Unplug className="size-4" />} className="mb-4" title="No live connection">
-        Every status, timestamp and reference on this page is mock data generated in the browser. The prototype does not call SAP S/4HANA or any other system.
-      </Notice>
+      {SAP_MODE === 'mock' && (
+        <Notice tone="demo" icon={<Unplug className="size-4" />} className="mb-4" title="SAP development mock">
+          The server runs with Sap:Mode=Mock. Submissions, retries and events on this page are real server records, but SAP responses come from the development mock — no SAP system is called.
+        </Notice>
+      )}
 
       <div className="mb-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="card p-4"><p className="text-xs text-muted">Mock connection status</p><p className="mt-1 flex items-center gap-2 text-lg font-semibold"><span className={`size-2.5 rounded-full ${overall === 'Operational' ? 'bg-success' : overall === 'Degraded' ? 'bg-warning' : 'bg-danger'}`} />{overall}</p><p className="text-[11px] text-muted">{state.integrationChannels.filter((c) => c.status !== 'Operational').length} channel(s) below target</p></div>
+        <div className="card p-4"><p className="text-xs text-muted">Connection status</p><p className="mt-1 flex items-center gap-2 text-lg font-semibold"><span className={`size-2.5 rounded-full ${overall === 'Operational' ? 'bg-success' : overall === 'Degraded' ? 'bg-warning' : 'bg-danger'}`} />{overall}</p><p className="text-[11px] text-muted">{state.integrationChannels.filter((c) => c.status !== 'Operational').length} channel(s) below target</p></div>
         <div className="card p-4"><p className="text-xs text-muted">Last synchronisation</p><p className="mt-1 text-lg font-semibold">{relative(lastSync?.lastSyncAt)}</p><p className="text-[11px] text-muted">{dateTime(lastSync?.lastSyncAt)}</p></div>
         <div className="card p-4"><p className="text-xs text-muted">Failed records</p><p className="mt-1 text-lg font-semibold text-danger-700 tabular">{failed.length}</p><p className="text-[11px] text-muted">Need attention</p></div>
         <div className="card p-4"><p className="text-xs text-muted">Pending / retrying</p><p className="mt-1 text-lg font-semibold tabular">{state.integrationEvents.filter((e) => e.status === 'Pending' || e.status === 'Retrying').length}</p><p className="text-[11px] text-muted">In queue</p></div>
@@ -146,10 +148,10 @@ export default function IntegrationMonitorPage() {
               { label: 'Direction', value: selected.direction },
             ]} />
             <div>
-              <p className="eyebrow mb-2">Payload preview (mock)</p>
+              <p className="eyebrow mb-2">Payload summary</p>
               <pre className="scroll-thin overflow-x-auto rounded-lg bg-midnight p-4 font-mono text-xs leading-relaxed text-slate-200">{selected.payloadPreview}</pre>
             </div>
-            <p className="flex items-start gap-1.5 text-xs text-muted"><FlaskConical className="mt-0.5 size-3.5 shrink-0" />Illustrative structure only — not an SAP API contract.</p>
+            <p className="flex items-start gap-1.5 text-xs text-muted"><FlaskConical className="mt-0.5 size-3.5 shrink-0" />Summary recorded by TradeFlow. The integration contract is described in docs/SAP_INTEGRATION_CONTRACT.md.</p>
           </div>
         )}
       </Drawer>

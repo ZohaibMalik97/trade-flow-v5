@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useScope } from './useScope'
 import { useStore } from '@/app/store'
-import type { SapAccessContext } from '@/services/sapDevMock'
+import type { SapAccessContext } from '@/services/contracts'
 import { SapServiceError } from '@/types/sap'
 
 /**

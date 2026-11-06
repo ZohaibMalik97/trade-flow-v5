@@ -35,7 +35,7 @@ import { toUsd } from '@/utils/fx'
 import { date, hoursBetween, money, num, relative } from '@/utils/format'
 import { cn } from '@/utils/cn'
 import { CustomerDashboard } from './CustomerDashboard'
-import { CHART, ChartCard, Donut, illustrativeMonthly, RequestList, SimpleBars, TrendArea } from './widgets'
+import { CHART, ChartCard, Donut, monthlyTotals, RequestList, SimpleBars, TrendArea } from './widgets'
 
 function greeting() {
   const h = new Date().getHours()
@@ -542,8 +542,8 @@ function FinanceDashboard() {
           <Donut data={statusData} centerLabel="invoices" centerValue={String(state.invoices.length)} />
         </ChartCard>
       </div>
-      <ChartCard title="Cash collected" description="USD equivalent · last 12 months">
-        <TrendArea data={illustrativeMonthly(5, 420000)} valueLabel="Collected" currency="USD" />
+      <ChartCard title="Cash collected" description="Verified payment advice · USD equivalent · last 12 months" demo={false}>
+        <TrendArea data={monthlyTotals(state.payments.filter((p) => p.status === 'Verified'), (p) => p.verifiedAt ?? p.valueDate, (p) => toUsd(p.amount, p.currency))} valueLabel="Collected" currency="USD" />
       </ChartCard>
     </div>
   )

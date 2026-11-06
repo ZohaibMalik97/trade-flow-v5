@@ -1,8 +1,9 @@
 import type { CurrencyCode } from '@/types/domain'
 
 /**
- * Illustrative, static FX rates (1 USD = x). Demo only — a real implementation
- * would read condition records / exchange rates from the ERP.
+ * FX rates (1 USD = x) used for USD-equivalent figures in the UI. These start values are overwritten at sign-in
+ * with the rates maintained on the server (GET /reference → currencies; administrators update them through
+ * PUT /currencies/{code}/rate). Prices and order totals themselves are always calculated on the server.
  */
 export const FX_PER_USD: Record<CurrencyCode, number> = {
   USD: 1,

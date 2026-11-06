@@ -197,7 +197,7 @@ export default function LandingPage() {
 
       <footer className="border-t border-line">
         <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-3 px-5 py-6 text-xs text-muted sm:flex-row sm:items-center sm:px-8">
-          <span className="flex items-center gap-2"><ShieldCheck className="size-4" /> {BRAND.name} prototype · no real customer data, credentials or ERP connection.</span>
+          <span className="flex items-center gap-2"><ShieldCheck className="size-4" /> {BRAND.name} B2B distribution portal · secure sign-in, role-based access.</span>
           <span>© {new Date().getFullYear()} {BRAND.name}</span>
         </div>
       </footer>

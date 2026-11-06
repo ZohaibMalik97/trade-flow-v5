@@ -13,8 +13,7 @@ import { TextareaField } from '@/components/forms/Field'
 import { useToast } from '@/components/ui/Toast'
 import { applicantCanEdit } from '@/workflow/engine'
 import { toPublicView } from '@/workflow/publicView'
-import { trackingLinkFor } from '@/workflow/tracking'
-import { brands } from '@/data/catalog'
+import { brands } from '@/data/reference'
 import { date, fileSize } from '@/utils/format'
 import { absoluteAppUrl } from '@/utils/url'
 
@@ -28,6 +27,8 @@ export default function MyApplicationDetailPage() {
   const [answer, setAnswer] = useState('')
   const [answerError, setAnswerError] = useState<string>()
   const [confirmSubmit, setConfirmSubmit] = useState(false)
+  // The server stores only a hash of the tracking token, so a copyable link exists only right after (re)generation.
+  const [freshLink, setFreshLink] = useState<string | null>(null)
 
   if (!app || !view)
     return (
@@ -38,8 +39,8 @@ export default function MyApplicationDetailPage() {
 
   const editable = applicantCanEdit(app, user, can)
   const clarification = app.status === 'Returned for Information' && app.returnInfo?.type === 'clarification'
-  const link = absoluteAppUrl(trackingLinkFor(app))
-  const expired = new Date(app.trackingTokenExpiresAt).getTime() < Date.now()
+  const link = freshLink ? (freshLink.startsWith('/') ? absoluteAppUrl(freshLink) : freshLink) : null
+  const expired = !freshLink && new Date(app.trackingTokenExpiresAt).getTime() < Date.now()
 
   return (
     <>
@@ -68,8 +69,8 @@ export default function MyApplicationDetailPage() {
                   <TextareaField label="Your answer" required rows={4} value={answer} onChange={(e) => setAnswer(e.target.value)} error={answerError} />
                   <Button
                     icon={<Send className="size-4" />}
-                    onClick={() => {
-                      const r = resubmitOwnApplication(app.id, answer)
+                    onClick={async () => {
+                      const r = await resubmitOwnApplication(app.id, answer)
                       if (!r.ok) return setAnswerError(r.error)
                       setAnswer('')
                       setAnswerError(undefined)
@@ -85,9 +86,9 @@ export default function MyApplicationDetailPage() {
               <Card>
                 <CardHeader title="Secure tracking link" description="Share only with colleagues who should see the status." icon={<Link2 className="size-4" />} />
                 <CardBody className="space-y-3 text-[13px]">
-                  <p className="text-muted">{expired ? 'Your link has expired.' : `Valid until ${date(app.trackingTokenExpiresAt)}.`}</p>
+                  <p className="text-muted">{expired ? 'Your link has expired.' : `Valid until ${date(app.trackingTokenExpiresAt)}.`}{!link && !expired && ' The link was emailed to your contact address; for security it cannot be shown again — regenerate it to copy a new one.'}</p>
                   <div className="flex flex-wrap gap-2">
-                    {!expired && (
+                    {link && (
                       <Button size="sm" variant="secondary" icon={<Copy className="size-3.5" />} onClick={() => { navigator.clipboard?.writeText(link).catch(() => undefined); toast.info('Tracking link copied') }}>
                         Copy link
                       </Button>
@@ -96,9 +97,11 @@ export default function MyApplicationDetailPage() {
                       size="sm"
                       variant="ghost"
                       icon={<RefreshCw className="size-3.5" />}
-                      onClick={() => {
-                        const r = renewTrackingLink(app.id)
-                        if (r.ok) toast.success('New tracking link created', 'The previous link no longer works.')
+                      onClick={async () => {
+                        const r = await renewTrackingLink(app.id)
+                        if (!r.ok) return toast.error('Could not create a link', r.error)
+                        setFreshLink(r.link)
+                        toast.success('New tracking link created', 'Copy it now — the previous link no longer works.')
                       }}
                     >
                       {expired ? 'Create new link' : 'Revoke & regenerate'}
@@ -145,8 +148,8 @@ export default function MyApplicationDetailPage() {
       <ConfirmDialog
         open={confirmSubmit}
         onClose={() => setConfirmSubmit(false)}
-        onConfirm={() => {
-          const r = submitOwnApplication(app.id)
+        onConfirm={async () => {
+          const r = await submitOwnApplication(app.id)
           setConfirmSubmit(false)
           if (!r.ok) toast.error('Cannot submit yet', r.error)
           else toast.success('Application submitted', `${app.ref} is queued for initial review.`)

@@ -6,19 +6,18 @@ import { fileSize } from '@/utils/format'
 export interface LocalFile {
   name: string
   sizeKb: number
+  /** The picked file; uploaded to the server's document storage when the form is submitted. */
+  file?: File
 }
 
-/**
- * Local-only file picker. Files are read for name and size only —
- * nothing is uploaded or persisted.
- */
+/** File picker. The selected files are uploaded when the surrounding form is submitted (the server validates type and size). */
 export function FileDrop({
   files,
   onChange,
   accept = '.pdf,.jpg,.jpeg,.png',
   multiple = true,
   label = 'Drop files here or browse',
-  hint = 'PDF, JPG or PNG up to 10 MB. Files stay in your browser (demo).',
+  hint = 'PDF, JPG or PNG up to 10 MB.',
   error,
 }: {
   files: LocalFile[]
@@ -35,7 +34,7 @@ export function FileDrop({
 
   const add = (list: FileList | null) => {
     if (!list) return
-    const picked = Array.from(list).map((f) => ({ name: f.name, sizeKb: Math.max(1, Math.round(f.size / 1024)) }))
+    const picked = Array.from(list).map((f) => ({ name: f.name, sizeKb: Math.max(1, Math.round(f.size / 1024)), file: f }))
     onChange(multiple ? [...files, ...picked] : picked.slice(0, 1))
   }
 

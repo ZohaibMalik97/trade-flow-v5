@@ -4,15 +4,15 @@
  * which is how a server-side implementation would have to enforce them.
  */
 import { describe, expect, it } from 'vitest'
-import { applications as seedApps } from '@/data/applications'
-import { regions, territories, users } from '@/data/org'
+import { applications as seedApps } from './fixtures/applications'
+import { regions, territories, users } from './fixtures/org'
 import { defaultRoles } from '@/auth/roles'
 import { assignedTerritoryIds, canViewApplication, customerScope as customerScopeFn, makeCan, permissionsFor } from '@/auth/authorize'
-import { customers } from '@/data/customers'
-import { defaultOnboardingWorkflow } from './onboarding'
-import { applyReviewerAction, availableActions, eligiblePreviousStages, resubmit, submitDraft, type WorkflowCtx } from './engine'
-import { toPublicView } from './publicView'
-import { createMockTrackingService, GENERIC_TRACK_ERROR } from './tracking'
+import { customers } from './fixtures/customers'
+import { defaultOnboardingWorkflow } from '@/workflow/onboarding'
+import { applyReviewerAction, availableActions, eligiblePreviousStages, resubmit, submitDraft, type WorkflowCtx } from '@/workflow/engine'
+import { toPublicView } from '@/workflow/publicView'
+import { createMockTrackingService, GENERIC_TRACK_ERROR } from './fixtures/tracking'
 import type { RegistrationApplication, WorkflowDef } from '@/types/domain'
 
 const ctx = (workflow: WorkflowDef = defaultOnboardingWorkflow): WorkflowCtx => ({ workflow: structuredClone(workflow), users, roles: defaultRoles, territories, regions })

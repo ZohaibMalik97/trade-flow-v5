@@ -1,8 +1,7 @@
 /**
- * Route and element guards (prototype).
- * They keep unauthorised pages and actions out of the UI — including pages opened by
- * typing a URL — but they are NOT a security boundary. Production APIs must enforce
- * the same permissions server-side on every request.
+ * Route and element guards.
+ * They keep unauthorised pages and actions out of the UI — including pages opened by typing a URL —
+ * but they are NOT a security boundary: the API enforces the same permissions on every request.
  */
 import type { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
@@ -14,8 +13,11 @@ import { landingPathFor } from '@/config/navigation'
 
 /** Redirects anonymous visitors to the sign-in page, remembering where they wanted to go. */
 export function RequireAuth({ children }: { children: ReactNode }) {
-  const { isAuthenticated } = useStore()
+  const { isAuthenticated, restoring, state } = useStore()
   const location = useLocation()
+  // While the session is restored from the refresh cookie (or data is loading), show a neutral loading state.
+  if (restoring || (isAuthenticated && !state.loaded))
+    return <div role="status" aria-label="Loading" className="flex min-h-dvh items-center justify-center text-sm text-muted">Loading TradeFlow…</div>
   if (!isAuthenticated) {
     const next = `${location.pathname}${location.search}`
     return <Navigate to={`/login?next=${encodeURIComponent(next)}`} replace />

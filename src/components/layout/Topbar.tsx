@@ -11,6 +11,7 @@ import {
   FlaskConical,
   HelpCircle,
   Keyboard,
+  KeyRound,
   LogOut,
   Menu as MenuIcon,
   Package,
@@ -235,7 +236,7 @@ function HelpMenu() {
               onClick={() => {
                 close()
                 navigator.clipboard?.writeText(BRAND.supportEmail).catch(() => undefined)
-                toast.info('Support address copied', 'Placeholder address for the prototype.')
+                toast.info('Support address copied', BRAND.supportEmail)
               }}
             >
               Copy support email
@@ -243,7 +244,7 @@ function HelpMenu() {
           </div>
         )}
       </Popover>
-      <Dialog open={dialog === 'tour'} onClose={() => setDialog(null)} title="Demo guide" description="A suggested path through the prototype. Sign out and sign in with the demo account for each step (password on the sign-in page).">
+      <Dialog open={dialog === 'tour'} onClose={() => setDialog(null)} title="Demo guide" description="A suggested path through the demo environment. Sign out and sign in with the demo account for each step (demo password configured by your administrator).">
         <ol className="space-y-3 text-[13px]">
           {[
             ['Public site', 'Register as a new customer (creates a prospective-customer login), then follow it at “Track application” with the reference and email.'],
@@ -288,7 +289,6 @@ function ProfileMenu() {
   const toast = useToast()
   const [confirm, setConfirm] = useState(false)
   const roleNames = user.roleIds.map((r) => lookups.role(r)?.name ?? r)
-  const expires = state.session?.expiresAt
   return (
     <>
       <Popover
@@ -316,15 +316,15 @@ function ProfileMenu() {
             <div className="px-2.5 pb-2">
               <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">Roles</p>
               <div className="mt-1 flex flex-wrap gap-1">{roleNames.map((r) => <span key={r} className="rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-medium text-primary-700">{r}</span>)}</div>
-              {expires && <p className="mt-2 text-[11px] text-muted">Session expires {relative(expires).replace('in ', 'in ')}</p>}
             </div>
             <MenuDivider />
-            {can('user.manage') && <MenuItem icon={<RotateCcw className="size-4" />} description="Restore all seeded records" onClick={() => { close(); setConfirm(true) }}>Reset demo data</MenuItem>}
+            <MenuItem icon={<KeyRound className="size-4" />} description="Use a new password from now on" onClick={() => { close(); navigate('/app/change-password') }}>Change password</MenuItem>
+            {can('user.manage') && state.system?.demoEnabled && <MenuItem icon={<RotateCcw className="size-4" />} description="Restore all seeded records" onClick={() => { close(); setConfirm(true) }}>Reset demo data</MenuItem>}
             <MenuItem
               icon={<LogOut className="size-4" />}
-              onClick={() => {
+              onClick={async () => {
                 close()
-                logout()
+                await logout()
                 toast.info('Signed out')
                 navigate('/login', { replace: true })
               }}
@@ -337,14 +337,15 @@ function ProfileMenu() {
       <ConfirmDialog
         open={confirm}
         onClose={() => setConfirm(false)}
-        onConfirm={() => {
-          resetDemo()
+        onConfirm={async () => {
+          const res = await resetDemo()
           setConfirm(false)
+          if (!res.ok) return toast.error('Demo reset failed', res.error)
           toast.success('Demo data reset', 'All records restored to their seeded state.')
           navigate('/app')
         }}
         title="Reset demo data?"
-        description="Every change made in this prototype (applications, approvals, users, roles, settings) will be discarded."
+        description="Every change made in this demo environment (applications, approvals, users, roles, settings) will be discarded and the seed data restored on the server."
         confirmLabel="Reset"
         tone="danger"
       />

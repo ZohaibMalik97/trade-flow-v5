@@ -4,7 +4,7 @@ import { AlertTriangle, Copy, KeyRound, Lock, Plus, Save, ShieldCheck, Trash2, U
 import { useStore } from '@/app/store'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Card, CardBody, CardHeader } from '@/components/ui/Card'
-import { Badge, DemoTag } from '@/components/ui/Badge'
+import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDialog, Dialog } from '@/components/ui/Dialog'
 import { Avatar, Notice } from '@/components/ui/misc'
@@ -37,8 +37,8 @@ export default function RolesPage() {
 
   const members = state.users.filter((u) => u.roleIds.includes(role.id))
   const dirty = name !== role.name || desc !== role.description
-  const toggle = (perm: string, on: boolean) => {
-    const r = setRolePermission(role.id, perm, on)
+  const toggle = async (perm: string, on: boolean) => {
+    const r = await setRolePermission(role.id, perm, on)
     if (!r.ok) toast.error('Not changed', r.error)
   }
 
@@ -48,7 +48,6 @@ export default function RolesPage() {
         title="Roles & permissions"
         description="Roles group permissions. A user’s access is the union of the permissions of all their roles."
         breadcrumbs={[{ label: 'Administration' }, { label: 'Roles & Permissions' }]}
-        meta={<DemoTag>Enforced in the browser only</DemoTag>}
         actions={manageRoles && <Button icon={<Plus className="size-4" />} onClick={() => setCreating(true)}>New role</Button>}
       />
       {!managePerms && <Notice tone="info" className="mb-4" icon={<ShieldCheck className="size-4" />}>Read-only: your role can view roles but not change permissions.</Notice>}
@@ -105,8 +104,8 @@ export default function RolesPage() {
                   size="sm"
                   icon={<Save className="size-4" />}
                   disabled={!dirty}
-                  onClick={() => {
-                    const r = updateRole(role.id, { name, description: desc })
+                  onClick={async () => {
+                    const r = await updateRole(role.id, { name, description: desc })
                     if (!r.ok) toast.error('Not saved', r.error)
                     else toast.success('Role updated')
                   }}
@@ -167,8 +166,8 @@ export default function RolesPage() {
         </div>
       </div>
 
-      {creating && <CreateRoleDialog roles={state.roles} onClose={() => setCreating(false)} onCreate={(input) => {
-        const r = createRole(input)
+      {creating && <CreateRoleDialog roles={state.roles} onClose={() => setCreating(false)} onCreate={async (input) => {
+        const r = await createRole(input)
         if (!r.ok) return r.error
         toast.success('Role created', 'Assign it to users in Users.')
         setSelected(r.id)
@@ -179,8 +178,8 @@ export default function RolesPage() {
       <ConfirmDialog
         open={confirmDelete}
         onClose={() => setConfirmDelete(false)}
-        onConfirm={() => {
-          const r = deleteRole(role.id)
+        onConfirm={async () => {
+          const r = await deleteRole(role.id)
           setConfirmDelete(false)
           if (!r.ok) return toast.error('Cannot delete role', r.error)
           toast.success('Role deleted')
@@ -195,7 +194,7 @@ export default function RolesPage() {
   )
 }
 
-function CreateRoleDialog({ roles, onClose, onCreate }: { roles: Role[]; onClose: () => void; onCreate: (input: { name: string; description: string; audience: Role['audience']; permissions: string[] }) => string | null }) {
+function CreateRoleDialog({ roles, onClose, onCreate }: { roles: Role[]; onClose: () => void; onCreate: (input: { name: string; description: string; audience: Role['audience']; permissions: string[] }) => Promise<string | null> }) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [audience, setAudience] = useState<Role['audience']>('internal')
@@ -210,7 +209,7 @@ function CreateRoleDialog({ roles, onClose, onCreate }: { roles: Role[]; onClose
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button onClick={() => setError(onCreate({ name, description, audience, permissions: roles.find((r) => r.id === copyFrom)?.permissions ?? [] }))}>Create role</Button>
+          <Button onClick={async () => setError(await onCreate({ name, description, audience, permissions: roles.find((r) => r.id === copyFrom)?.permissions ?? [] }))}>Create role</Button>
         </>
       }
     >

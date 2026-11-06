@@ -14,7 +14,7 @@ import { ProductImage } from '@/components/data-display/ProductImage'
 import { StockSourceNote } from '@/components/data-display/StockSourceNote'
 import { DataTable, type Column } from '@/components/data-display/DataTable'
 import { useToast } from '@/components/ui/Toast'
-import { brands, CATEGORIES } from '@/data/catalog'
+import { brands, CATEGORIES } from '@/data/reference'
 import { calculatePromo, nextPromoThreshold } from '@/utils/promo'
 import { fromUsd } from '@/utils/fx'
 import { money, num } from '@/utils/format'
@@ -267,7 +267,7 @@ export function CartPanel({ currency }: { currency: CurrencyCode }) {
               <span className="text-[13px] text-muted">Subtotal · estimated total</span>
               <span className="text-base font-semibold tabular">{money(total, currency)}</span>
             </div>
-            <p className="text-[11px] text-muted">Excludes tax and freight — taxes are not calculated by this prototype. Final prices are confirmed on the proforma invoice.</p>
+            <p className="text-[11px] text-muted">Excludes tax and freight — taxes are not calculated by the portal. Final prices are confirmed on the proforma invoice.</p>
             <Button className="w-full" iconRight={<ArrowRight className="size-4" />} onClick={() => navigate('/app/requests/new')}>Continue to request</Button>
           </div>
         </>

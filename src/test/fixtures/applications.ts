@@ -5,7 +5,7 @@
  */
 import type { Address, ApplicationDocument, ApplicationStatus, RegistrationApplication, WorkflowActionType, WorkflowEvent } from '@/types/domain'
 import { ago, ahead } from '@/utils/time'
-import { randomToken } from '@/auth/demoCredentials'
+const randomToken = () => Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)
 import { ONBOARDING_WORKFLOW_ID } from '@/workflow/onboarding'
 import { contentOf } from '@/workflow/engine'
 

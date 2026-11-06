@@ -5,8 +5,8 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { Card, CardHeader } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { useToast } from '@/components/ui/Toast'
-import { brands } from '@/data/catalog'
-import { regions } from '@/data/org'
+import { brands } from '@/data/reference'
+import { regions } from '@/data/reference'
 import { cn } from '@/utils/cn'
 
 export default function TerritoriesPage() {
@@ -56,10 +56,11 @@ export default function TerritoriesPage() {
                           className="input h-9"
                           disabled={!editable}
                           value={t.managerId}
-                          onChange={(e) => {
+                          onChange={async (e) => {
                             const prev = t.managerId
                             const next = e.target.value
-                            updateTerritory(t.id, { managerId: next })
+                            const res = await updateTerritory(t.id, { managerId: next })
+                            if (!res.ok) return toast.error('Not changed', res.error)
                             // Keep the user's own territory assignments in sync with the territory record.
                             const nu = state.users.find((u) => u.id === next)
                             const pu = state.users.find((u) => u.id === prev)
@@ -82,8 +83,9 @@ export default function TerritoriesPage() {
                                 type="button"
                                 disabled={!editable}
                                 aria-pressed={on}
-                                onClick={() => {
-                                  updateTerritory(t.id, { visibleBrandIds: on ? t.visibleBrandIds.filter((x) => x !== b.id) : [...t.visibleBrandIds, b.id] })
+                                onClick={async () => {
+                                  const res = await updateTerritory(t.id, { visibleBrandIds: on ? t.visibleBrandIds.filter((x) => x !== b.id) : [...t.visibleBrandIds, b.id] })
+                                  if (!res.ok) return toast.error('Not changed', res.error)
                                   toast.info(`${b.name} ${on ? 'hidden in' : 'visible in'} ${t.name}`)
                                 }}
                                 className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors disabled:cursor-default', on ? 'border-primary/40 bg-primary-50 text-primary-700' : 'border-line text-muted line-through decoration-muted/50', editable && 'hover:border-primary')}

@@ -39,7 +39,7 @@ import { ProductImage } from '@/components/data-display/ProductImage'
 import { SapSubmissionPanel } from '@/components/orders/SapSubmissionPanel'
 import { SAP_MODE_LABEL } from '@/services'
 import { cn } from '@/utils/cn'
-import { brands } from '@/data/catalog'
+import { brands } from '@/data/reference'
 import { toUsd } from '@/utils/fx'
 import { date, dateTime, fileSize, money, num } from '@/utils/format'
 import type { DocumentRecord } from '@/types/domain'
@@ -50,7 +50,7 @@ export default function RequestDetailPage() {
   const { id } = useParams()
   const location = useLocation()
   const fromWorkbench = location.pathname.startsWith('/app/approvals')
-  const { state, user, can, decideApproval, submitToSap, cancelRequest, addRequestComment, issueInvoice } = useStore()
+  const { state, user, can, decideApproval, cancelRequest, addRequestComment, issueInvoice } = useStore()
   const scope = useScope()
   const lookups = useLookups()
   const toast = useToast()
@@ -92,27 +92,17 @@ export default function RequestDetailPage() {
   const external = user.kind === 'external'
   const extraCols = (external ? 0 : 1) + (r.sap?.confirmedQty ? 1 : 0)
 
-  const submitDecision = () => {
+  const submitDecision = async () => {
     if (!decision) return
     if (decision !== 'approve' && comment.trim().length < MIN_REMARK) return setCommentError(`Please enter at least ${MIN_REMARK} characters.`)
-    const res = decideApproval(r.id, decision, comment.trim())
+    const res = await decideApproval(r.id, decision, comment.trim())
     if (!res.ok) return setCommentError(res.error)
     toast.success(
       decision === 'approve' ? (res.finalApproved ? 'Request approved internally' : `Approved at ${step?.stage} stage`) : decision === 'reject' ? 'Request rejected' : decision === 'return_previous' ? `Returned to ${prevStep?.stage}` : 'Returned for clarification',
-      res.finalApproved ? 'Approval recorded. Creating the sales order in SAP — this is a separate step with its own status.' : 'Decision recorded with your name and time (saved in this browser).',
+      res.finalApproved ? (res.sapQueued ? 'Approval recorded. The SAP sales order is queued and created in the background — follow its status in the SAP panel.' : 'Approval recorded. SAP order creation has its own status — submit or retry it from the SAP panel.') : 'Decision recorded with your name and time.',
     )
     setDecision(null)
     setComment('')
-    if (res.finalApproved && can('order.sap_submit')) {
-      // Approval triggers SAP order creation automatically (in production the BFF reacts to the approval event).
-      // The SAP outcome is recorded separately; a failure leaves the request Approved with a retry.
-      void submitToSap(r.id).then((s) => {
-        if (!s.ok) toast.error('SAP order creation not started', s.error)
-        else if (s.outcome === 'failed') toast.error('SAP order creation failed', `${s.message} The approval is kept; retry from the SAP panel.`)
-        else toast.success(s.outcome === 'existing_returned' ? 'SAP already had this order — no duplicate' : 'SAP sales order created (development mock)', s.message)
-      })
-      return
-    }
     if (fromWorkbench) navigate('/app/approvals')
   }
   const isFinalLevel = !!step && r.approvalSteps.indexOf(step) === r.approvalSteps.length - 1
@@ -158,7 +148,7 @@ export default function RequestDetailPage() {
               <CardHeader
                 title={`Your decision · ${step.stage}`}
                 description={`Level ${r.approvalSteps.indexOf(step) + 1} of ${r.approvalSteps.length} · SLA ${step.slaHours}h`}
-                actions={<><SlaIndicator step={step} /><DemoTag>Simulated approval</DemoTag></>}
+                actions={<SlaIndicator step={step} />}
               />
               <CardBody className="space-y-4">
                 <div className="grid gap-3 text-[13px] sm:grid-cols-3">
@@ -265,8 +255,9 @@ export default function RequestDetailPage() {
                         variant="secondary"
                         icon={<MessageSquarePlus className="size-4" />}
                         disabled={!newComment.trim()}
-                        onClick={() => {
-                          addRequestComment(r.id, newComment.trim(), internalNote)
+                        onClick={async () => {
+                          const res = await addRequestComment(r.id, newComment.trim(), internalNote)
+                          if (!res.ok) return toast.error('Comment not added', res.error)
                           setNewComment('')
                           toast.success(internalNote ? 'Internal comment added' : 'Comment added', internalNote ? 'Visible to staff only.' : 'Visible to the customer and staff.')
                         }}
@@ -326,7 +317,7 @@ export default function RequestDetailPage() {
               <p className="text-xs text-muted">≈ {money(toUsd(invoice?.total ?? total, r.currency), 'USD')} at illustrative FX</p>
             </CardBody>
           </Card>
-          <p className="flex items-start gap-1.5 text-xs text-muted"><FlaskConical className="mt-0.5 size-3.5 shrink-0" /> Approvals and invoices on this page are stored in this browser (prototype). SAP responses come from a development mock — no SAP system is connected.</p>
+          <p className="flex items-start gap-1.5 text-xs text-muted"><FlaskConical className="mt-0.5 size-3.5 shrink-0" /> Approvals and proformas are recorded on the server with your name and time. SAP data shows its source on each panel.</p>
         </div>
       </div>
 
@@ -356,21 +347,21 @@ export default function RequestDetailPage() {
         {decision === 'approve' && isFinalLevel && (
           <p className="mt-3 rounded-md bg-canvas px-3 py-2 text-xs text-muted">After approval TradeFlow requests the sales order from SAP ({SAP_MODE_LABEL}). The SAP result is shown separately; if it fails the approval stays and the order can be retried without creating a duplicate.</p>
         )}
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-muted"><FlaskConical className="size-3.5" />Recorded as {user.name} · {dateTime(new Date().toISOString())} · saved in this browser (prototype)</p>
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-muted"><FlaskConical className="size-3.5" />Recorded as {user.name} · {dateTime(new Date().toISOString())}</p>
       </Dialog>
       <ConfirmDialog
         open={confirmCancel}
         onClose={() => setConfirmCancel(false)}
-        onConfirm={() => { cancelRequest(r.id, 'Cancelled by requester'); setConfirmCancel(false); toast.info(`${r.ref} cancelled`) }}
+        onConfirm={async () => { const res = await cancelRequest(r.id, 'Cancelled by requester'); setConfirmCancel(false); if (!res.ok) return toast.error('Not cancelled', res.error); toast.info(`${r.ref} cancelled`) }}
         title={`Cancel ${r.ref}?`}
-        description="Approvers will no longer see this request. This cannot be undone in the prototype."
+        description="Approvers will no longer see this request. This cannot be undone."
         confirmLabel="Cancel request"
         tone="danger"
       />
       <ConfirmDialog
         open={confirmInvoice}
         onClose={() => setConfirmInvoice(false)}
-        onConfirm={() => { issueInvoice(r.id); setConfirmInvoice(false); toast.success('Proforma invoice issued', 'Saved in this browser (prototype). The customer has been notified in-app.') }}
+        onConfirm={async () => { const res = await issueInvoice(r.id); setConfirmInvoice(false); if (!res.ok) return toast.error('Proforma not issued', res.error); toast.success('Proforma invoice issued', 'The customer has been notified.') }}
         title="Issue proforma invoice?"
         description={`${money(total, r.currency)}${r.fulfilment === 'Delivery' ? ' + 2.5% illustrative freight' : ''} · payment due in 7 days.`}
         confirmLabel="Issue invoice"

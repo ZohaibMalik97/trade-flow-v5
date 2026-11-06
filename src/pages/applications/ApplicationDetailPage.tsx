@@ -31,7 +31,7 @@ import { EmptyState, KeyValue, Notice } from '@/components/ui/misc'
 import { Checkbox, SelectField, TextareaField } from '@/components/forms/Field'
 import { DocumentPreview } from '@/components/data-display/DocumentPreview'
 import { useToast } from '@/components/ui/Toast'
-import { brands } from '@/data/catalog'
+import { brands } from '@/data/reference'
 import {
   ACTION_LABEL,
   MIN_REASON,
@@ -229,13 +229,13 @@ function ActionDialog({ app, action, onClose }: { app: RegistrationApplication; 
   }
   const c = copy[action]
 
-  const confirm = () => {
+  const confirm = async () => {
     if (needsPublic && pubLen < MIN_REASON) return setError(`Please enter at least ${MIN_REASON} characters.`)
     if (needsInternal && intLen < MIN_REASON) return setError(`Findings of at least ${MIN_REASON} characters are required.`)
     if (action === 'return_to_requester' && sections.length === 0) return setError('Select at least one section the applicant may edit.')
-    const r = applicationAction(app.id, action, { remarks, publicRemarks, editableSections: sections, targetStageId: target, targetUserId: targetInfo?.userId })
+    const r = await applicationAction(app.id, action, { remarks, publicRemarks, editableSections: sections, targetStageId: target, targetUserId: targetInfo?.userId })
     if (!r.ok) return setError(r.error)
-    toast.success(`${ACTION_LABEL[action === 'start_review' ? 'start_review' : action]} — ${app.ref}`, final ? 'Customer account created (demo).' : undefined)
+    toast.success(`${ACTION_LABEL[action === 'start_review' ? 'start_review' : action]} — ${app.ref}`, final ? 'Customer account created.' : undefined)
     onClose()
   }
 
@@ -415,11 +415,11 @@ function InternalComments({ app }: { app: RegistrationApplication }) {
           size="sm"
           variant="secondary"
           disabled={!text.trim()}
-          onClick={() => {
-            const r = commentOnApplication(app.id, text)
+          onClick={async () => {
+            const r = await commentOnApplication(app.id, text)
             if (!r.ok) return setError(r.error)
             setText('')
-            toast.success('Comment saved', 'Internal · saved in this browser (prototype)')
+            toast.success('Comment saved', 'Internal — not visible to the applicant')
           }}
         >
           Add comment

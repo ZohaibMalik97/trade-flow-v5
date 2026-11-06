@@ -6,11 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "build:html": "tsc -b && vite build --mode single",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "vitest run",
-    "test:e2e": "python3 tests/e2e/scenarios.py"
+    "test": "vitest run"
   },
   "dependencies": {
     "clsx": "^2.1.1",
